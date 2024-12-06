@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Storage App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.4/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .container {
+            max-width: 900px;
+            margin-top: 40px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            font-weight: bold;
+            color: #0275d8;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #343a40;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .btn-custom {
+            background-color: #0275d8;
+            color: #ffffff;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-custom:hover {
+            background-color: #025aa5;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: #d9534f;
+            color: #ffffff;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-danger:hover {
+            background-color: #c9302c;
+            transform: translateY(-2px);
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .file-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-item i {
+            font-size: 1.5rem;
+            color: #6c757d;
+            margin-right: 15px;
+        }
+
+        .file-item a {
+            text-decoration: none;
+            color: #0275d8;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .file-item a:hover {
+            text-decoration: underline;
+        }
+
+        .file-list {
+            max-height: 350px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .file-list li {
+            background-color: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        .alert {
+            font-weight: bold;
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .select-file {
+            border: 2px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .select-file option {
+            padding: 5px;
+        }
+
+        .header-icon {
+            font-size: 1.8rem;
+            color: #0275d8;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1><i class="fas fa-cloud-upload-alt header-icon"></i>File Storage App</h1>
+
+        <!-- File Upload Section -->
+        <div>
+            <h2>Upload File</h2>
+            <form action="/upload" method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <input type="file" name="file" class="form-control select-file" required>
+                </div>
+                <button type="submit" class="btn btn-custom w-100">Upload</button>
+            </form>
+        </div>
+
+        <!-- File Deletion Section -->
+        <div class="mt-4">
+            <h2>Delete File</h2>
+            <form id="deleteForm">
+                <div class="mb-3">
+                    <select id="fileSelect" name="fileName" class="form-select" required></select>
+                </div>
+                <button type="button" class="btn btn-danger w-100" onclick="deleteFile()">Delete</button>
+            </form>
+        </div>
+
+        <!-- Uploaded Files List Section -->
+        <div class="mt-4">
+            <h2>Uploaded Files</h2>
+            <ul id="fileList" class="list-group file-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        function populateFileListWithIcons() {
+            fetch('/view')
+                .then(response => response.json())
+                .then(data => {
+                    const fileList = document.getElementById('fileList');
+                    fileList.innerHTML = '';
+
+                    data.files.forEach(fileName => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item file-item';
+
+                        const fileExtension = fileName.split('.').pop();
+
+                        const iconSpan = document.createElement('span');
+                        iconSpan.className = 'me-3';
+                        iconSpan.innerHTML = getFileIconHTML(fileExtension);
+
+                        const fileLink = document.createElement('a');
+                        fileLink.href = `/uploads/${fileName}`;
+                        fileLink.textContent = fileName;
+
+                        listItem.appendChild(iconSpan);
+                        listItem.appendChild(fileLink);
+
+                        fileList.appendChild(listItem);
+                    });
+                })
+                .catch(error => console.error(error));
+        }
+
+        function getFileIconHTML(fileExtension) {
+            const iconClasses = {
+                pdf: 'far fa-file-pdf',
+                doc: 'far fa-file-word',
+                docx: 'far fa-file-word',
+                xls: 'far fa-file-excel',
+                xlsx: 'far fa-file-excel',
+                ppt: 'far fa-file-powerpoint',
+                pptx: 'far fa-file-powerpoint',
+                txt: 'far fa-file-alt',
+                jpg: 'far fa-file-image',
+                jpeg: 'far fa-file-image',
+                png: 'far fa-file-image',
+                gif: 'far fa-file-image',
+                default: 'far fa-file'
+            };
+            return `<i class="${iconClasses[fileExtension.toLowerCase()] || iconClasses['default']}"></i>`;
+        }
+
+        function deleteFile() {
+            const deleteForm = document.getElementById('deleteForm');
+            const formData = new FormData(deleteForm);
+            const fileName = formData.get('fileName');
+
+            fetch(`/delete/${fileName}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.text())
+                .then(message => {
+                    alert(message);
+                    populateFileListWithIcons();
+                    populateDeleteOptions();
+                })
+                .catch(error => console.error(error));
+        }
+
+        function populateDeleteOptions() {
+            fetch('/view')
+                .then(response => response.json())
+                .then(data => {
+                    const fileSelect = document.getElementById('fileSelect');
+                    fileSelect.innerHTML = '';
+                    data.files.forEach(fileName => {
+                        const option = document.createElement('option');
+                        option.value = fileName;
+                        option.textContent = fileName;
+                        fileSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error(error));
+        }
+
+        // Populate the file list and delete options on page load
+        window.onload = () => {
+            populateFileListWithIcons();
+            populateDeleteOptions();
+        };
+    </script>
+</body>
+
+</html>
